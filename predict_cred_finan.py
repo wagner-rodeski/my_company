@@ -353,10 +353,12 @@ plt.xlabel('Predicted class')
 plt.title('Random Forest')
 # plt.savefig('random_forest')
 
-logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]) # TPR (ROC) || >melhor
+logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]) # TPR (precision 1) (ROC >melhor)
 logreg_cm[0,1]/(logreg_cm[0,0]+logreg_cm[0,1]) # FNR
-logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1]) # TNR (1-FPR)
-logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]) # FPR (ROC) (1-TNR) || <melhor
+logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1]) # TNR (precision 0) (1-FPR)
+logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]) # FPR (ROC) (1-TNR <melhor)
+[logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]),logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1])]
+[logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]),logreg_cm[0,1]/(logreg_cm[0,0]+logreg_cm[0,1])]
 
 #         precision
 
@@ -371,7 +373,9 @@ logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]) # FPR (ROC) (1-TNR) || <melhor
 # PRECISION: tp / (tp + fp), the ability of the classifier not to label as positive a sample that is negative.
 # RECALL: tp / (tp + fn), the ability of the classifier to find all the positive samples.
 # F1: média hamônica de precisione e recall
-                  
+
+## minha interpretação:
+##   - precision: olha só os true, isto é, avalia a capacidade de acertar
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
