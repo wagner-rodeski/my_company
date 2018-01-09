@@ -158,6 +158,13 @@ base.loc[(base['DIAS_SEM_MOVIMENTO'] <= 180) & (base['DIAS_SEM_MOVIMENTO'] > 90)
 base.loc[base['DIAS_SEM_MOVIMENTO'] > 180, 'DIAS_SEM_MOVIMENTO'] = 5
 base['DIAS_SEM_MOVIMENTO'].unique().tolist()
 
+base['IDADE'].hist()
+base.loc[base['IDADE'] <= 18, 'IDADE'] = 1
+base.loc[(base['IDADE'] <= 30) & (base['IDADE'] > 18), 'IDADE'] = 2
+base.loc[(base['IDADE'] <= 40) & (base['IDADE'] > 30), 'IDADE'] = 3
+base.loc[(base['IDADE'] <= 50) & (base['IDADE'] > 40), 'IDADE'] = 4
+base.loc[base['IDADE'] > 50, 'IDADE'] = 5
+base['IDADE'].unique().tolist()
 
 ## transformando variáveis categóricas em numéricas (isso não é necessário para rnd forst)
 
