@@ -7,12 +7,9 @@ Created on Tue Dec 19 09:44:42 2017
 
 import pandas as pd
 import numpy as np
-
 import matplotlib.pyplot as plt
 import seaborn as sns
-
 import statsmodels.api as sm
-
 from sklearn import preprocessing
 from sklearn import metrics
 from sklearn.preprocessing import MinMaxScaler
@@ -38,14 +35,19 @@ from sklearn import model_selection
 #    cnae/cbo (fazer algum tipo de agrupamento)
 #    patrimonio
 #    médias ou outras visões que agreguem comportamento histórico/tendência
+#
 ############################################################################################
 ############################################################################################
 
 #------------------------------------------------------------------------------
 # lendo os dados para train & test
+base = pd.read_excel ('sample_40k_seed_123321_vShort2.xlsx')
 base = pd.read_excel ('sample_40k_seed_123321.xlsx')
 base.head()
-#base_0 = base.copy()
+
+#------------------------------------------------------------------------------
+# lendo os dados para predição (usar mesmo nome de df pra reaproveitar os códigos de cleansing)
+base = pd.read_excel ('pred.xlsx')
 
 #------------------------------------------------------------------------------
 # verificando missing data
@@ -101,7 +103,8 @@ base['PROD_CRED_FINANC'].value_counts()
 # contagem valores relativos (uso o "1" pois ele representa o True)
 base['PROD_CRED_FINANC'].value_counts(1)
 #------------------------------------------------------------------------------
-# visualizando os dados
+###############################################################################
+## visualizando os dados
 
 sns.countplot(x='PROD_CRED_FINANC', data=base, palette='hls')
 plt.show()
@@ -133,12 +136,28 @@ corr=np.corrcoef(base_1, rowvar=0)
 w, v = np.linalg.eig(corr)        # eigen values & eigen vectors
 w # nenhum auto valor próximo de zero
 
+##
+###############################################################################
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #---------------------tratando dados e variáveis-------------------------------
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
+
+## criando categorias para variáveis contínuas para posteriormente tranformá-las em dummy
+
+base['DIAS_SEM_MOVIMENTO'].hist()
+base.loc[base['DIAS_SEM_MOVIMENTO'] <= 30, 'DIAS_SEM_MOVIMENTO'] = 1
+base.loc[(base['DIAS_SEM_MOVIMENTO'] <= 60) & (base['DIAS_SEM_MOVIMENTO'] > 30)
+, 'DIAS_SEM_MOVIMENTO'] = 2
+base.loc[(base['DIAS_SEM_MOVIMENTO'] <= 90) & (base['DIAS_SEM_MOVIMENTO'] > 60)
+, 'DIAS_SEM_MOVIMENTO'] = 3
+base.loc[(base['DIAS_SEM_MOVIMENTO'] <= 180) & (base['DIAS_SEM_MOVIMENTO'] > 90)
+, 'DIAS_SEM_MOVIMENTO'] = 4
+base.loc[base['DIAS_SEM_MOVIMENTO'] > 180, 'DIAS_SEM_MOVIMENTO'] = 5
+base['DIAS_SEM_MOVIMENTO'].unique().tolist()
+
 
 ## transformando variáveis categóricas em numéricas (isso não é necessário para rnd forst)
 
@@ -191,13 +210,14 @@ base['FAIXA_RISCO'].unique()
 # transformando variáveis categóricas em variáveis dummy
 # pq???
 
-cat_vars = ['FAIXA_RISCO']
+cat_vars = ['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO']
 for var in cat_vars:
     cat_list ='var'+'_'+var
     cat_list = pd.get_dummies(base[var], prefix=var)
     base_temp = base.join(cat_list)
     base = base_temp
-base.drop(base.columns[0], axis=1, inplace=True)
+base = base.drop(['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO'], axis=1)
+
 base.columns.tolist()
 #------------------------------------------------------------------------------
 # definindo variável resposta e variáveis preditoras
@@ -255,7 +275,7 @@ results.mean()
 
 
 model = RandomForestClassifier()
-rfe = RFE(model, 16)
+rfe = RFE(model, 30)
 rfe = rfe.fit(X, y)
 rfe.support_
 rfe.ranking_
@@ -303,27 +323,55 @@ results_2.mean()
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-#---------------------precision/recall/confusion------------------------------------------
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-# random forrest
+#---------------------precision/recall/confusion-------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
 
+
+
+print(classification_report(y_test, logreg.predict(X_test)))
 print(classification_report(y_test, rf.predict(X_test)))
 
-y_pred = rf.predict(X_test)
+y_pred_1 = logreg.predict(X_test)
+y_pred_2 = rf.predict(X_test)
 
-forest_cm = metrics.confusion_matrix(y_pred, y_test, [1,0])
-sns.heatmap(forest_cm, annot=True, fmt='.2f',xticklabels = ["tem_cred_finan", "n_tem_cred_finan"] , yticklabels = ["tem_cred_finan", "n_tem_cred_finan"] )
+logreg_cm = metrics.confusion_matrix(y_pred_1, y_test, [1,0])
+rf_cm = metrics.confusion_matrix(y_pred_2, y_test, [1,0])
+
+sns.heatmap(logreg_cm, annot=True, fmt='.2f',xticklabels = ["tem_cred_finan", "n_tem_cred_finan"] , yticklabels = ["tem_cred_finan", "n_tem_cred_finan"] )
+plt.ylabel('True class')
+plt.xlabel('Predicted class')
+plt.title('Reg Log')
+
+sns.heatmap(rf_cm, annot=True, fmt='.2f',xticklabels = ["tem_cred_finan", "n_tem_cred_finan"] , yticklabels = ["tem_cred_finan", "n_tem_cred_finan"] )
 plt.ylabel('True class')
 plt.xlabel('Predicted class')
 plt.title('Random Forest')
-plt.savefig('random_forest')
+# plt.savefig('random_forest')
 
-#The precision is the ratio tp / (tp + fp) where tp is the number of true positives and fp the number of false positives. The precision is intuitively the ability of the classifier to not label a sample as positive if it is negative.
-#The recall is the ratio tp / (tp + fn) where tp is the number of true positives and fn the number of false negatives. The recall is intuitively the ability of the classifier to find all the positive samples.
-#The F-beta score can be interpreted as a weighted harmonic mean of the precision and recall, where an F-beta score reaches its best value at 1 and worst score at 0.
-#The F-beta score weights the recall more than the precision by a factor of beta. beta = 1.0 means recall and precision are equally important.
-#The support is the number of occurrences of each class in y_test.
+logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]) # TPR (ROC) || >melhor
+logreg_cm[0,1]/(logreg_cm[0,0]+logreg_cm[0,1]) # FNR
+logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1]) # TNR (1-FPR)
+logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]) # FPR (ROC) (1-TNR) || <melhor
+
+#         precision
+
+# 0       TN (=1-FPR(ROC))
+# 1       TP (=TPR->ROC)
+
+# confusion matrix
+# TP  FN
+# FP  TN
+
+
+# PRECISION: tp / (tp + fp), the ability of the classifier not to label as positive a sample that is negative.
+# RECALL: tp / (tp + fn), the ability of the classifier to find all the positive samples.
+# F1: média hamônica de precisione e recall
+                  
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -347,7 +395,26 @@ plt.xlabel('False Positive Rate')
 plt.ylabel('True Positive Rate')
 plt.title('Receiver operating characteristic')
 plt.legend(loc="lower right")
-plt.savefig('ROC')
+# plt.savefig('ROC')
+plt.show()
+
+
+logit_roc_auc = roc_auc_score(y_test, logreg_2.predict(X_test_2))
+fpr, tpr, thresholds = roc_curve(y_test, logreg_2.predict_proba(X_test_2)[:,1])
+rf_roc_auc = roc_auc_score(y_test, rf_2.predict(X_test_2))
+roc_auc_score(y_test, rf_2.predict(X_test_2))
+rf_fpr, rf_tpr, rf_thresholds = roc_curve(y_test, rf_2.predict_proba(X_test_2)[:,1])
+plt.figure()
+plt.plot(fpr, tpr, label='Logistic Regression (area = %0.2f)' % logit_roc_auc)
+plt.plot(rf_fpr, rf_tpr, label='Random Forest (area = %0.2f)' % rf_roc_auc)
+plt.plot([0, 1], [0, 1],'r--')
+plt.xlim([0.0, 1.0])
+plt.ylim([0.0, 1.05])
+plt.xlabel('False Positive Rate')
+plt.ylabel('True Positive Rate')
+plt.title('Receiver operating characteristic')
+plt.legend(loc="lower right")
+# plt.savefig('ROC')
 plt.show()
 #------------------------------------------------------------------------------
 #---------------------features_importance--------------------------------------
@@ -363,33 +430,11 @@ for index in feature_indexes_by_importance:
 #---------------------predizendo um novo assoc---------------------------------
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-
-pred_0 = pd.read_excel ('pred.xlsx')
-pred_0.head()
-pred_1 = pd.DataFrame()
-pred_1 = pred_1.append(pred_0)
-pred_1.drop(['COD_COOP','NUM_CPF_CNPJ','PROD_CRED_FINANC'], axis=1, inplace=True)
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '6_Baixo2','baixo',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '7_Baixo1','baixo',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '8_Baixíssimo','baixo',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '2_Alto2','alto',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '1_Altíssimo','alto',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '3_Alto1','alto',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '5_Médio1','medio',pred_1['FAIXA_RISCO'])
-pred_1['FAIXA_RISCO']=np.where(pred_1['FAIXA_RISCO'] == '4_Médio2','medio',pred_1['FAIXA_RISCO'])
-pred_1 = pred_1[pred_1.FAIXA_RISCO != '0_Default']
 #------------------------------------------------------------------------------
-# gerando vetor/matriz para previsão
-pred_cat_vars = ['FAIXA_RISCO']
-for var in pred_cat_vars:
-    pred_cat_list ='var'+'_'+var
-    pred_cat_list = pd.get_dummies(pred_1[var], prefix=var)
-    pred_1 = pred_1.join(pred_cat_list)    
-pred_1.drop('FAIXA_RISCO', axis=1, inplace=True)
 
 pred = pd.DataFrame(columns=[X.columns])
-pred = pred.append(pred_1)
+pred = pred.append(base)
 pred.fillna(value=0, inplace=True)
-#------------------------------------------------------------------------------
-# fazendo a predição
+
 rf.predict(pred)[0]
+logreg.predict(pred)[0]
