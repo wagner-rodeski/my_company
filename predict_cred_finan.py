@@ -11,6 +11,7 @@ import matplotlib.pyplot as plt
 import seaborn as sns
 import statsmodels.api as sm
 from sklearn import preprocessing
+from sklearn.preprocessing import LabelEncoder
 from sklearn import metrics
 from sklearn.preprocessing import MinMaxScaler
 from sklearn.cross_validation import train_test_split
@@ -47,7 +48,7 @@ base.head()
 
 #------------------------------------------------------------------------------
 # lendo os dados para predição (usar mesmo nome de df pra reaproveitar os códigos de cleansing)
-base = pd.read_excel ('pred.xlsx')
+base = pd.read_excel ('dados_pred.xlsx')
 
 #------------------------------------------------------------------------------
 # verificando missing data
@@ -166,6 +167,7 @@ base.loc[(base['IDADE'] <= 50) & (base['IDADE'] > 40), 'IDADE'] = 4
 base.loc[base['IDADE'] > 50, 'IDADE'] = 5
 base['IDADE'].unique().tolist()
 
+
 ## transformando variáveis categóricas em numéricas (isso não é necessário para rnd forst)
 
 # conhecendo todas as categorias das var cat
@@ -174,32 +176,35 @@ base['FLG_SEXO'].unique(),
 base['PORTE_PADRAO'].unique(),
 base['PUBLICO_ESTRATEGICO'].unique(),
 base['SCR'].unique(),
+base['IDADE'].unique(),
 base['FAIXA_RISCO'].unique()]).T
-labels.columns=['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO']
+labels.columns=['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','IDADE','FAIXA_RISCO']
 labels
 
 # enconding
 
-from sklearn.preprocessing import LabelEncoder
 le1 = preprocessing.LabelEncoder()
 le2 = preprocessing.LabelEncoder()
 le3 = preprocessing.LabelEncoder()
 le4 = preprocessing.LabelEncoder()
 le5 = preprocessing.LabelEncoder()
+le6 = preprocessing.LabelEncoder()
 
 base['FLG_SEXO'] = le1.fit_transform(base['FLG_SEXO'])
 base['PORTE_PADRAO'] = le2.fit_transform(base['PORTE_PADRAO'])
 base['PUBLICO_ESTRATEGICO'] = le3.fit_transform(base['PUBLICO_ESTRATEGICO'])
 base['SCR'] = le4.fit_transform(base['SCR'])
-base['FAIXA_RISCO'] = le5.fit_transform(base['FAIXA_RISCO'])
+base['IDADE'] = le5.fit_transform(base['IDADE'])
+base['FAIXA_RISCO'] = le6.fit_transform(base['FAIXA_RISCO'])
 
 labels_encoded = pd.DataFrame([
 le1.classes_,
 le2.classes_,
 le3.classes_,
 le4.classes_,
-le5.classes_]).T
-labels_encoded.columns=['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO']
+le5.classes_,
+le6.classes_]).T
+labels_encoded.columns=['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','IDADE','FAIXA_RISCO']
 labels_encoded
 
 # le1.classes_.tolist()
@@ -217,13 +222,14 @@ base['FAIXA_RISCO'].unique()
 # transformando variáveis categóricas em variáveis dummy
 # pq???
 
-cat_vars = ['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO']
+cat_vars = ['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','IDADE','FAIXA_RISCO']
 for var in cat_vars:
     cat_list ='var'+'_'+var
     cat_list = pd.get_dummies(base[var], prefix=var)
     base_temp = base.join(cat_list)
     base = base_temp
-base = base.drop(['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','FAIXA_RISCO'], axis=1)
+    
+base = base.drop(['FLG_SEXO','PORTE_PADRAO','PUBLICO_ESTRATEGICO','SCR','IDADE','FAIXA_RISCO'], axis=1)
 
 base.columns.tolist()
 #------------------------------------------------------------------------------
@@ -242,17 +248,20 @@ X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.3, random_
 #------------------------------------------------------------------------------
 # treinando modelo de regressão logística
 
+######### normalizando dados
 scaler = MinMaxScaler()
 X_train = scaler.fit_transform(X_train)
 X_test = scaler.transform(X_test)
+####################################
 
+######### logit
 logit_model=sm.Logit(y,X)
 result=logit_model.fit()
 result.summary()
+####################################
 
 logreg = LogisticRegression()
 logreg.fit(X_train, y_train)
-
 accuracy_score(y_test, logreg.predict(X_test))
 
 #------------------------------------------------------------------------------
@@ -261,7 +270,6 @@ accuracy_score(y_test, logreg.predict(X_test))
 
 rf = RandomForestClassifier(n_jobs=-1, n_estimators=30, max_features=16)
 rf.fit(X_train, y_train)
-
 accuracy_score(y_test, rf.predict(X_test))
 
 #------------------------------------------------------------------------------
@@ -269,7 +277,7 @@ accuracy_score(y_test, rf.predict(X_test))
 
 
 kfold = model_selection.KFold(n_splits=10, random_state=7)
-modelCV = RandomForestClassifier()
+modelCV = LogisticRegression()
 scoring = 'accuracy'
 results = model_selection.cross_val_score(modelCV, X_train, y_train, cv=kfold, scoring=scoring)
 results.mean()
@@ -281,17 +289,17 @@ results.mean()
 # selecionando variáveis
 
 
-model = RandomForestClassifier()
-rfe = RFE(model, 30)
-rfe = rfe.fit(X, y)
-rfe.support_
-rfe.ranking_
+model = LogisticRegression()
+lr = RFE(model, 30)
+lr = lr.fit(X, y)
+lr.support_
+lr.ranking_
 #------------------------------------------------------------------------------
 # montando vetor com variáveis selecionadas
 
 w=pd.DataFrame(t, columns=['produtos'])
 w
-q=pd.DataFrame(rfe.support_, columns=['boolean'])
+q=pd.DataFrame(lr.support_, columns=['boolean'])
 q
 a = w.join(q)
 a
@@ -323,7 +331,7 @@ accuracy_score(y_test, rf_2.predict(X_test_2))
 # treinando modelo com cross validation
 
 kfold_2 = model_selection.KFold(n_splits=10, random_state=7)
-modelCV_2 = RandomForestClassifier()
+modelCV_2 = LogisticRegression()
 scoring_2 = 'accuracy'
 results_2 = model_selection.cross_val_score(modelCV_2, X_train_2, y_train, cv=kfold_2, scoring=scoring_2)
 results_2.mean()
@@ -337,8 +345,6 @@ results_2.mean()
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
-
-
 
 print(classification_report(y_test, logreg.predict(X_test)))
 print(classification_report(y_test, rf.predict(X_test)))
@@ -373,8 +379,8 @@ a[1,0]/(a[1,0]+a[1,1]) # FPR (ROC) (1-TNR <melhor)
 # para modelagem de oferta de produto vou querer alto TPR e baixo FNR
 [a[0,0]/(a[0,0]+a[0,1]),a[0,1]/(a[0,0]+a[0,1])]
 
-#         precision
 
+#         precision
 # 0       TN (=1-FPR(ROC))
 # 1       TP (=TPR->ROC)
 
@@ -388,7 +394,8 @@ a[1,0]/(a[1,0]+a[1,1]) # FPR (ROC) (1-TNR <melhor)
 # F1: média hamônica de precisione e recall
 
 ## minha interpretação:
-##   - precision: olha só os true, isto é, avalia a capacidade de acertar
+##   -> precision: olha só os true, isto é, avalia a capacidade de acertar
+                  
 
 #------------------------------------------------------------------------------
 #------------------------------------------------------------------------------
@@ -453,5 +460,9 @@ pred = pd.DataFrame(columns=[X.columns])
 pred = pred.append(base)
 pred.fillna(value=0, inplace=True)
 
-rf.predict(pred)[0]
-logreg.predict(pred)[0]
+pred_vf1 = pd.DataFrame(rf.predict(pred))
+pred_vf1.hist()
+pred_vf1.sum()/pred_vf1.count()
+pred_vf2 = pd.DataFrame(logreg.predict(pred))
+pred_vf2.hist()
+pred_vf2.sum()/pred_vf2.count()
