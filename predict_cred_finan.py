@@ -353,12 +353,18 @@ plt.xlabel('Predicted class')
 plt.title('Random Forest')
 # plt.savefig('random_forest')
 
-logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]) # TPR (precision 1) (ROC >melhor)
-logreg_cm[0,1]/(logreg_cm[0,0]+logreg_cm[0,1]) # FNR
-logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1]) # TNR (precision 0) (1-FPR)
-logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]) # FPR (ROC) (1-TNR <melhor)
-[logreg_cm[0,0]/(logreg_cm[0,0]+logreg_cm[0,1]),logreg_cm[1,1]/(logreg_cm[1,0]+logreg_cm[1,1])]
-[logreg_cm[1,0]/(logreg_cm[1,0]+logreg_cm[1,1]),logreg_cm[0,1]/(logreg_cm[0,0]+logreg_cm[0,1])]
+a=logreg_cm
+a=rf_cm
+
+a[0,0]/(a[0,0]+a[0,1]) # TPR (precision 1) (ROC >melhor)
+a[0,1]/(a[0,0]+a[0,1]) # FNR
+a[1,1]/(a[1,0]+a[1,1]) # TNR (precision 0) (1-FPR)
+a[1,0]/(a[1,0]+a[1,1]) # FPR (ROC) (1-TNR <melhor)
+[a[0,0]/(a[0,0]+a[0,1]),a[1,1]/(a[1,0]+a[1,1])] # acertos
+[a[1,0]/(a[1,0]+a[1,1]),a[0,1]/(a[0,0]+a[0,1])] # erros
+
+# para modelagem de oferta de produto vou querer alto TPR e baixo FNR
+[a[0,0]/(a[0,0]+a[0,1]),a[0,1]/(a[0,0]+a[0,1])]
 
 #         precision
 
