@@ -415,7 +415,11 @@ a[1,0]/(a[1,0]+a[1,1]) # FPR (ROC) (1-TNR <melhor)
 
 
 # PRECISION: tp / (tp + fp), the ability of the classifier not to label as positive a sample that is negative.
+#   percent of positive classifications that are truly positive
+
 # RECALL: tp / (tp + fn), the ability of the classifier to find all the positive samples.
+#   percent of truly positive instances that were classified as such
+
 # F1: média hamônica de precisione e recall
 
 ## minha interpretação:
