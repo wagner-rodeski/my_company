@@ -25,6 +25,22 @@ from sklearn.metrics import confusion_matrix
 from sklearn.metrics import roc_auc_score
 from sklearn.metrics import roc_curve
 from sklearn import model_selection
+############################################################################################
+#   Problem definition
+#   Variable Identification (predictors and target)
+#   Making Sense of Data
+#       Univariate Analysis
+#       Bi-variate Analysis
+#   Missing values treatment
+#   Outlier treatment
+#   Feature Engineering
+#       Variable transformation
+#       Variable creation
+#   Modeling
+#   Model Evaluation/Selection
+#   Deploy
+############################################################################################
+
 
 ############################################################################################
 ############################################################################################
