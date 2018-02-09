@@ -209,7 +209,7 @@ base.loc[base['IDADE'] > 50, 'IDADE'] = 5
 base['IDADE'].unique().tolist()
 
 
-## transformando variáveis categóricas em numéricas (isso não é necessário para rnd forst)
+## transformando variáveis categóricas em numéricas
 
 # conhecendo todas as categorias das var cat
 labels = pd.DataFrame([                          
